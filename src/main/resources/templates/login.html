@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in | Grand Meridian Resort</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.auth-page{min-height:100vh}
+.theme-float{position:fixed;top:18px;right:18px;z-index:1100}
+.demo-note{display:flex;align-items:center;gap:.45rem;font-size:.75rem;color:var(--muted);margin-top:.5rem}
+.auth-error{margin-bottom:1rem}
+</style>
+</head>
+<body class="auth-page">
+<button class="icon-btn theme-float" data-theme-toggle data-theme-icon title="Toggle theme"></button>
+<div class="auth-wrap">
+  <div class="auth-side">
+    <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1100&q=70" alt="Grand Meridian Resort at dusk" onerror="this.style.display='none'">
+    <div class="veil"></div>
+    <div class="content">
+      <div class="quote">&ldquo;The sea, the sky, and a room that makes time stand still.&rdquo;</div>
+      <div class="mini">Sign in to manage your bookings, run dashboards or stay connected with Grand Meridian Resort.</div>
+    </div>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-box">
+      <div class="as-head">
+        <a th:href="@{/}" class="logo" style="margin-bottom:1.4rem;display:inline-flex"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M20.2 2.8a6 6 0 0 0-8.5 0L5 9.5V19h9.5l6.7-6.7a6 6 0 0 0-1-9.5z"/><path d="M16 8 2 22M17.5 15H9"/></svg></span><span>Grand Meridian Resort<i class="brand-small" style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.26em;color:var(--accent);font-family:var(--font);text-transform:uppercase;font-style:normal">Resort &amp; Spa</i></span></a>
+        <h1>Welcome back</h1>
+        <p class="as-sub">Log in with your email and password to continue.</p>
+      </div>
+
+      <div class="alert alert-danger auth-error" th:if="${param.error}" role="alert">
+        Invalid email or password. Please try again.
+      </div>
+      <div class="alert alert-success auth-error" th:if="${param.logout}" role="alert">
+        You have been signed out successfully.
+      </div>
+      <div class="alert alert-success auth-error" th:if="${param.registered}" role="alert">
+        Registration successful! Please sign in.
+      </div>
+
+      <form th:action="@{/login}" method="post" novalidate>
+        <div class="field">
+          <label for="email">Email address</label>
+          <div class="input-affix"><span data-icon="mail"></span><input class="input" type="email" id="email" name="email" placeholder="you@hotel.com" autocomplete="email" required></div>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-affix right pass-row"><span data-icon="lock"></span>
+            <input class="input" type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button class="eye" type="button" data-eye aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon-sm"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="row between" style="margin-bottom:1rem">
+          <label class="check"><input type="checkbox" id="remember" name="remember-me"> Remember me</label>
+          <a th:href="@{/forgot-password}" class="text-sm">Forgot password?</a>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" type="submit" id="submitBtn">Sign in</button>
+      </form>
+
+      <p class="auth-foot">Don&rsquo;t have an account? <a th:href="@{/register}">Create one</a></p>
+    </div>
+  </div>
+</div>
+<script th:src="@{/js/core.js}"></script>
+<script>
+App.boot({guard:'guest'});
+document.querySelector('[data-eye]').addEventListener('click',function(e){
+  e.preventDefault();
+  var pass=document.getElementById('password');
+  var visible=pass.type==='text';
+  pass.type=visible?'password':'text';
+  this.innerHTML=visible?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon-sm"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon-sm"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+});
+</script>
+</body>
+</html>

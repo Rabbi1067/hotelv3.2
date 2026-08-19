@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discounts & Offers | Admin</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.off-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.off-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.off-card::before{content:'';position:absolute;inset:0 0 auto 0;height:4px;background:var(--grad)}
+.off-pct{font-size:2rem;font-weight:800;font-family:var(--display);letter-spacing:-.03em;line-height:1.1}
+.off-tag{position:absolute;top:1rem;right:1rem}
+</style>
+</head>
+
+<body data-chrome="dash" data-active="ado">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Seasonal offers</div><h2 style="font-family:var(--display)">Room discounts</h2><p>Percentage or fixed-amount room deals, separate from promo codes.</p></div>
+        <button class="btn btn-primary" id="addOff"><span data-icon="plus" class="icon" style="width:16px;height:16px"></span> New discount</button>
+      </div>
+      <div class="off-grid" id="offGrid"></div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/core.js}"></script>
+<script>
+
+App.boot({guard:'admin'});
+App.renderDashChrome('ado','Discounts & Offers',[{label:'Dashboard',href:'/admin/dashboard'},{label:'Discounts',href:'#'}]);
+(function(){
+  var grid=document.getElementById('offGrid');
+  var types=['percent','fixed'];
+  var styles={percent:'%',fixed:'$'};
+  function all(){ return App.getPromotions(); }
+  function norm(d){
+    d.type=d.type||(d.percent?'percent':'fixed');
+    if(typeof d.value==='undefined'){ d.value=d.percent!=null?d.percent:0; }
+    return d;
+  }
+  function badgeOf(d){
+    var t=App.today();
+    if(d.status==='active'&&+new Date(d.start)<=t&&+new Date(d.end)>=t)return '<span class="badge b-success">Active</span>';
+    if(d.status==='paused')return '<span class="badge b-plain">Paused</span>';
+    if(+new Date(d.start)>t)return '<span class="badge b-info">Upcoming</span>';
+    return '<span class="badge b-plain">Expired</span>';
+  }
+  function isActive(d){ return d.status==='active'&&+new Date(d.start)<=App.today()&&+new Date(d.end)>=App.today(); }
+  function discountLabel(d){
+    if(d.type==='fixed') return '-'+App.money(d.value);
+    return '-'+d.value+'%';
+  }
+  function render(){
+    var list=all().map(norm);
+    if(!list.length){ grid.innerHTML=App.emptyState('tag','No discounts yet','Create a seasonal offer or room deal to boost occupancy.','<button class="btn btn-soft btn-sm" onclick="document.getElementById(\'addOff\').click()">New discount</button>'); return; }
+    grid.innerHTML=list.map(function(d){
+      var rooms=(d.rooms||[]).map(function(rid){ var r=App.roomById(rid); return r?r.name:rid; }).join(', ');
+      return '<div class="off-card" data-id="'+d.id+'">'+
+      '<span class="off-tag">'+badgeOf(d)+'</span>'+
+      '<div class="off-pct">'+discountLabel(d)+'</div>'+
+      '<div class="strong mt-1" style="font-size:1.05rem">'+d.title+'</div>'+
+      '<p class="text-sm mt-1" style="color:var(--muted)">'+(d.description||'')+'</p>'+
+      '<div class="text-sm mt-2" style="display:flex;flex-direction:column;gap:.2rem;color:var(--muted)">'+
+      '<span><span data-icon="bed" style="width:13px;height:13px"></span> '+App.esc(rooms||'All rooms')+'</span>'+
+      '<span><span data-icon="calendar" style="width:13px;height:13px"></span> '+App.dateStr(d.start)+' &rarr; '+App.dateStr(d.end)+'</span>'+
+      (d.minStay?'<span><span data-icon="clock" style="width:13px;height:13px"></span> Min '+d.minStay+' nights</span>':'')+
+      '</div>'+
+      '<div class="row mt-3" style="gap:.45rem">'+
+      '<button class="btn btn-outline btn-sm grow" data-edit="'+d.id+'">Edit</button>'+
+      '<button class="btn btn-ghost btn-sm" data-toggle="'+d.id+'">'+(isActive(d)||d.status==='paused'?'Pause':'Activate')+'</button>'+
+      '<button class="btn btn-danger btn-sm" data-del="'+d.id+'">'+App.icon('trash','icon-sm')+'</button>'+
+      '</div></div>';
+    }).join('');
+    grid.querySelectorAll('[data-edit]').forEach(function(b){ b.addEventListener('click',function(){ edit(norm(all().find(function(d){return d.id===b.dataset.edit;}))); }); });
+    grid.querySelectorAll('[data-toggle]').forEach(function(b){ b.addEventListener('click',function(){
+      var d=norm(all().find(function(x){return x.id===b.dataset.toggle;}));
+      var active=isActive(d);
+      var nxt=active?'paused':'active';
+      App.savePromotions(all().map(function(x){ if(x.id===d.id){ x.status=nxt; } return x; }));
+      App.toast('Discount '+(nxt==='active'?'activated.':'paused.'));
+      render();
+    }); });
+    grid.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click',function(){
+      var d=all().find(function(x){return x.id===b.dataset.del;});
+      App.openConfirm('Delete discount?','"'+App.esc(d.title)+'" will be removed permanently.',{variant:'danger',confirmText:'Delete'}).then(function(ok){
+        if(!ok)return;
+        App.savePromotions(all().filter(function(x){return x.id!==d.id;}));
+        App.toast('Discount deleted.','info');
+        render();
+      });
+    }); });
+  }
+  function edit(d){
+    App.openForm(d?'Edit discount':'New discount',[
+      {id:'dTitle',label:'Offer title',type:'text',req:true,value:d?d.title:'',placeholder:'e.g. Summer Escape'},
+      {id:'dType',label:'Discount type',type:'select',value:d?(d.type||'percent'):'percent',options:['percent:Percentage (%)','fixed:Fixed amount ($)']},
+      {id:'dValue',label:'Discount value',type:'number',req:true,value:d?d.value:10,placeholder:'10 for 10%, 50 for $50'},
+      {id:'dStart',label:'Start date',type:'date',value:d?d.start:''},
+      {id:'dEnd',label:'End date',type:'date',value:d?d.end:''},
+      {id:'dMin',label:'Min nights (optional)',type:'number',value:d?(d.minStay||''):''},
+      {id:'dStatus',label:'Status',type:'select',value:d?(d.status||'active'):'active',options:['active:Active','paused:Paused','upcoming:Upcoming','expired:Expired']},
+      {id:'dRoom',label:'Apply to room',type:'select',value:d&&d.rooms&&d.rooms[0]?d.rooms[0]:'',options:[''].concat(App.getRooms().map(function(r){return r.id+':'+r.name;}))},
+      {id:'dDesc',label:'Short description',type:'text',value:d?d.description||'':''}
+    ],d?'Save changes':'Create discount').then(function(v){
+      if(!v)return;
+      var rec={
+        id:d?d.id:('p'+Date.now()),
+        title:v.dTitle, type:v.dType, percent:v.dType==='percent'?(+v.dValue||0):0, value:+v.dValue||0,
+        start:App.toInput(v.dStart)||App.fmtDateISO(App.today()), end:App.toInput(v.dEnd)||App.fmtDateISO(App.addDays(App.today(),30)),
+        minStay:v.dMin?+v.dMin:0, description:v.dDesc||'',
+        rooms:v.dRoom?[v.dRoom]:[], code:d?d.code:'',
+        status:v.dStatus||'active', featured:d?d.featured:false
+      };
+      App.savePromotions(d?all().map(function(x){return x.id===rec.id?rec:x;}):all().concat(rec));
+      App.toast(d?'Discount updated.':'Discount created.');
+      render();
+    });
+  }
+  document.getElementById('addOff').addEventListener('click',function(){ edit(null); });
+  render();
+})();
+</script>
+</body>
+</html>
+
+

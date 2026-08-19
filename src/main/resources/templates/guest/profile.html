@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Profile | Grand Meridian Resort</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.prof-hero{display:flex;gap:1.4rem;align-items:center;background:linear-gradient(135deg,var(--surface-2),var(--surface));border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.8rem;flex-wrap:wrap}
+.prof-hero .avatar.xl{width:96px;height:96px;font-size:1.9rem;border:3px solid var(--surface);box-shadow:var(--shadow)}
+.upload-av{position:relative;flex:none}
+.upload-av .cam{position:absolute;bottom:-2px;right:-2px;width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;border:3px solid var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.upload-av .cam:hover{background:var(--primary-hover)}
+.prof-grid{display:grid;grid-template-columns:330px 1fr;gap:1.4rem;align-items:start}
+@media (max-width:1024px){.prof-grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body data-chrome="dash" data-active="pro">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="prof-hero mb-4">
+        <label class="upload-av">
+          <span id="proAvatar"></span>
+          <span class="cam" title="Change photo"><span data-icon="camera" style="width:16px;height:16px"></span></span>
+          <input type="file" id="avFile" accept="image/*" class="hide">
+        </label>
+        <div class="grow">
+          <h2 style="font-family:var(--display)" id="proName"></h2>
+          <div class="row mt-1" style="gap:.45rem;flex-wrap:wrap">
+            <span class="badge b-primary" id="proRole"></span>
+            <span class="badge b-success" id="proStatus"></span>
+          </div>
+          <p class="text-sm mt-2" style="color:var(--muted)">Member since <span id="proSince"></span></p>
+        </div>
+      </div>
+
+      <div class="prof-grid">
+        <aside>
+          <div class="card card-pad mb-3">
+            <h3 style="font-size:1rem;margin-bottom:.9rem">Quick links</h3>
+            <a class="row sb-link" style="justify-content:flex-start" th:href="@{/user/my-bookings}"><span data-icon="bookmark"></span> My bookings</a>
+            <a class="row sb-link" style="justify-content:flex-start" th:href="@{/user/favorites}"><span data-icon="heart"></span> Favorites</a>
+            <a class="row sb-link" style="justify-content:flex-start" th:href="@{/user/payment-status}"><span data-icon="card"></span> Payments</a>
+            <a class="row sb-link" style="justify-content:flex-start" th:href="@{/user/wifi}"><span data-icon="wifi"></span> WiFi</a>
+            <a class="row sb-link" style="justify-content:flex-start" th:href="@{/admin/settings}"><span data-icon="settings"></span> Settings</a>
+          </div>
+          <div class="card card-pad">
+            <h3 style="font-size:1rem;margin-bottom:.9rem">Account</h3>
+            <button class="btn btn-outline btn-block mb-2" data-changePass>Change password</button>
+            <button class="btn btn-danger btn-block" data-logout><span data-icon="logout"></span> Log out</button>
+          </div>
+        </aside>
+
+        <div>
+          <form class="card" id="profForm">
+            <div class="card-head"><h3>Personal information</h3><button class="btn btn-primary btn-sm" type="submit" id="saveBtn"><span class="spin"></span><span class="lbl">Save changes</span></button></div>
+            <div class="card-body">
+              <div class="grid" style="grid-template-columns:1fr 1fr">
+                <div class="field"><label>Full name</label><input class="input" id="pName"><div class="err">Name is required.</div></div>
+                <div class="field"><label>Email</label><input class="input" type="email" id="pEmail"><div class="err">Enter a valid email.</div></div>
+                <div class="field"><label>Phone</label><input class="input" id="pPhone"><div class="err">Enter a valid phone number.</div></div>
+                <div class="field"><label>Role</label><input class="input" id="pRole" readonly style="background:var(--surface-3);font-weight:600"></div>
+              </div>
+              <div class="field"><label>Address</label><textarea class="input" id="pAddr" rows="2"></textarea></div>
+            </div>
+          </form>
+
+          <form class="card mt-3" id="passForm">
+            <div class="card-head"><h3>Change password</h3></div>
+            <div class="card-body">
+              <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+                <div class="field"><label>Current password</label><input class="input" type="password" id="curPass" autocomplete="current-password"><div class="err">Enter your current password.</div></div>
+                <div class="field"><label>New password</label><input class="input" type="password" id="newPass" autocomplete="new-password"><div class="err">Min 6 characters.</div></div>
+                <div class="field"><label>Confirm new password</label><input class="input" type="password" id="confPass" autocomplete="new-password"><div class="err">Passwords do not match.</div></div>
+              </div>
+              <button class="btn btn-outline" type="submit" id="passBtn">Update password</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/core.js}"></script>
+<script>
+
+App.boot({guard:'auth'});
+App.renderDashChrome(App.getCurrentUser().role==='GUEST'?'upro':'apro','My Profile',[{label:'Dashboard',href:'/user/dashboard'},{label:'Profile',href:'#'}]);
+(function(){
+  var cu=App.getCurrentUser();
+  var roleLabel=App.roleLabel(cu.role);
+  document.getElementById('proName').textContent=cu.name;
+  document.getElementById('proRole').textContent=roleLabel;
+  document.getElementById('proStatus').textContent=cu.status==='active'?'Active account':'Inactive';
+  document.getElementById('proSince').textContent=App.fmtDate(cu.memberSince);
+  paintAvatar();
+  function paintAvatar(){
+    document.getElementById('proAvatar').innerHTML=App.avatarHTML(cu,'avatar xl '+cu.role.toLowerCase().replace('_','-'));
+  }
+  var form=document.getElementById('profForm');
+  document.getElementById('pName').value=cu.name;
+  document.getElementById('pEmail').value=cu.email;
+  document.getElementById('pPhone').value=cu.phone||'';
+  document.getElementById('pAddr').value=cu.address||'';
+  document.getElementById('pRole').value=roleLabel;
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    App.clearErrors(form);
+    var ok=App.fieldErrors([
+      {id:'pName',req:true},
+      {id:'pEmail',req:true,pattern:/^[^@\s]+@[^@\s]+\.[^@\s]+$/},
+      {id:'pPhone',req:true,pattern:/^[+\d][\d\s()-]{6,18}$/}
+    ]);
+    if(!ok){ App.toast('Please fix the highlighted fields.','warning'); return; }
+    var btn=document.getElementById('saveBtn'); btn.classList.add('loading'); btn.disabled=true;
+    setTimeout(function(){
+      cu=App.updateProfile({name:document.getElementById('pName').value,email:document.getElementById('pEmail').value,phone:document.getElementById('pPhone').value,address:document.getElementById('pAddr').value});
+      document.getElementById('proName').textContent=cu.name;
+      App.toast('Profile updated successfully!');
+      btn.classList.remove('loading'); btn.disabled=false;
+    },600);
+  });
+  var avFile=document.getElementById('avFile');
+  document.querySelector('.upload-av .cam').addEventListener('click',function(){ avFile.click(); });
+  avFile.addEventListener('change',function(){
+    if(!this.files.length)return;
+    App.readImgFile(this.files[0],function(dataURL){
+      cu=App.updateProfile({image:dataURL});
+      paintAvatar();
+      App.toast('Profile picture updated.');
+    });
+  });
+  document.getElementById('passForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    App.clearErrors(document.getElementById('passForm'));
+    var cur=document.getElementById('curPass'), np=document.getElementById('newPass'), cp=document.getElementById('confPass');
+    var ok=App.fieldErrors([
+      {id:'curPass',req:true,eqCheck:true},
+      {id:'newPass',req:true,pattern:/^.{6,}$/},
+      {id:'confPass',req:true}
+    ]);
+    if(!ok){ App.toast('Please fill all password fields.','warning'); return; }
+    var u=App.getUsers().filter(function(x){return x.id===cu.id;})[0];
+    if(cur.value!==u.password){ cur.closest('.field').classList.add('show-err'); App.toast('Current password is incorrect.','error'); return; }
+    if(np.value!==cp.value){ cp.closest('.field').classList.add('show-err'); App.toast('New passwords do not match.','warning'); return; }
+    var users=App.getUsers().map(function(x){ if(x.id===cu.id)x.password=np.value; return x; });
+    App.saveUsers(users);
+    App.setCurrentUser(App.getUsers().filter(function(x){return x.id===cu.id;})[0]);
+    this.reset();
+    App.toast('Password changed successfully.');
+  });
+  document.querySelector('[data-changePass]').addEventListener('click',function(){ document.getElementById('passForm').scrollIntoView({behavior:'smooth'}); });
+})();
+</script>
+</body>
+</html>
+
+
+

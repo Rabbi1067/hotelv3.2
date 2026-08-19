@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Management | Admin</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.cm-note{background:var(--primary-soft);border:1px dashed var(--primary);color:var(--primary);border-radius:10px;padding:.7rem 1rem;font-size:.82rem;margin-bottom:1.2rem}
+.cm-sec{display:block;font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:1.1rem 0 .45rem}
+.cm-hint{font-size:.74rem;color:var(--muted);margin-top:.2rem}
+</style>
+</head>
+
+<body data-chrome="dash" data-active="ac">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap" style="max-width:900px">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Site copy</div><h2 style="font-family:var(--display)">Content &amp; messaging</h2></div>
+      </div>
+      <div class="cm-note">Changes here update the live public site (Home, About, Contact) instantly — stored locally for the prototype.</div>
+      <div class="tabbar" id="tabs"><button class="on" data-tab="home">Home page</button><button data-tab="about">About us</button><button data-tab="contact">Contact &amp; support</button><button data-tab="socials">Social links</button></div>
+      <form id="cmForm" novalidate>
+        <div class="card" id="cmPane"></div>
+        <div class="row mt-3" style="justify-content:flex-end"><button class="btn btn-primary" type="submit"><span class="spin"></span><span class="lbl">Save changes</span></button></div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/core.js}"></script>
+<script>
+
+App.boot({guard:'admin'});
+App.renderDashChrome('ac','Content Management',[{label:'Dashboard',href:'/admin/dashboard'},{label:'Content',href:'#'}]);
+(function(){
+  var C=App.getContents();
+  var pane=document.getElementById('cmPane');
+  var TABS={
+    home:[
+      {sec:'Brand'},
+      {id:'hotelName',label:'Hotel name',field:'text',hint:'Shown in the navbar, footer and browser title.'},
+      {id:'tagline',label:'Tagline',field:'text',hint:'Short brand line used across the public site.'},
+      {sec:'Hero banner'},
+      {id:'heroTitle',label:'Hero title',field:'text'},
+      {id:'heroSub',label:'Hero subtitle',field:'textarea'},
+      {id:'heroBtn',label:'Primary button label',field:'text',hint:'Label of the main “Explore Rooms” button on the hero.'},
+      {sec:'About preview (on the home page)'},
+      {id:'aboutTitle',label:'About title',field:'text'},
+      {id:'aboutText',label:'About body',field:'textarea'},
+      {id:'aboutPoints',label:'About highlights',field:'list',hint:'One highlight per line — shown as check-list items on the home page.'},
+      {sec:'Stats band (home page)'},
+      {id:'stats.rooms',label:'Rooms — value',field:'text'},
+      {id:'stats.labelRooms',label:'Rooms — label',field:'text'},
+      {id:'stats.guests',label:'Guests — value',field:'text'},
+      {id:'stats.labelGuests',label:'Guests — label',field:'text'},
+      {id:'stats.years',label:'Years — value',field:'text'},
+      {id:'stats.labelYears',label:'Years — label',field:'text'},
+      {id:'stats.rating',label:'Rating — value',field:'text'},
+      {id:'stats.labelRating',label:'Rating — label',field:'text'},
+      {sec:'Footer'},
+      {id:'footerAbout',label:'Footer blurb',field:'textarea'}
+    ],
+    about:[
+      {sec:'About page'},
+      {id:'aboutTitle',label:'About title',field:'text'},
+      {id:'aboutText',label:'About body',field:'textarea'},
+      {id:'aboutPoints',label:'About highlights',field:'list',hint:'One highlight per line — check-list items.'},
+      {sec:'Stats band'},
+      {id:'stats.rooms',label:'Rooms — value',field:'text'},
+      {id:'stats.labelRooms',label:'Rooms — label',field:'text'},
+      {id:'stats.guests',label:'Guests — value',field:'text'},
+      {id:'stats.labelGuests',label:'Guests — label',field:'text'},
+      {id:'stats.years',label:'Years — value',field:'text'},
+      {id:'stats.labelYears',label:'Years — label',field:'text'},
+      {id:'stats.rating',label:'Rating — value',field:'text'},
+      {id:'stats.labelRating',label:'Rating — label',field:'text'},
+      {sec:'Footer'},
+      {id:'footerAbout',label:'Footer blurb',field:'textarea'}
+    ],
+    contact:[
+      {sec:'Primary contact'},
+      {id:'address',label:'Address',field:'text',hint:'Used on the home location card and the contact page.'},
+      {id:'phone',label:'Phone',field:'text'},
+      {id:'email',label:'Email',field:'text',hint:'Main guest email — used in contact cards and mailto links.'},
+      {sec:'Front desk & support'},
+      {id:'supportHours',label:'Support hours',field:'text',hint:'Front-desk hours shown on the home contact card and footer.'},
+      {sec:'Map'},
+      {id:'latitude',label:'Latitude',field:'text',hint:'Used to build the “Open in maps” link.'},
+      {id:'longitude',label:'Longitude',field:'text'}
+    ],
+    socials:[
+      {sec:'Social links (footer & contact page)'},
+      {id:'socials.facebook',label:'Facebook URL',field:'text'},
+      {id:'socials.instagram',label:'Instagram URL',field:'text'},
+      {id:'socials.twitter',label:'X (Twitter) URL',field:'text'},
+      {id:'socials.youtube',label:'YouTube URL',field:'text'}
+    ]
+  };
+  function getPath(obj,key){
+    return key.split('.').reduce(function(o,k){ return o==null?undefined:o[k]; },obj);
+  }
+  function setPath(obj,key,val){
+    var parts=key.split('.'), i=0;
+    while(i<parts.length-1){
+      var kp=parts[i];
+      if(obj[kp]==null||typeof obj[kp]!=='object') obj[kp]={};
+      obj=obj[kp]; i++;
+    }
+    obj[parts[i]]=val;
+  }
+  function render(tab){
+    var conf=TABS[tab];
+    var html='<div class="card-body">';
+    conf.forEach(function(f){
+      if(f.sec){ html+='<span class="cm-sec">'+f.sec+'</span>'; return; }
+      var val=getPath(C,f.id);
+      if(f.field==='textarea'){
+        html+='<div class="field"><label>'+f.label+'</label><textarea class="input" id="cm_'+f.id+'" rows="4">'+String(val==null?'':val).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>'+(f.hint?'<div class="cm-hint">'+f.hint+'</div>':'')+'</div>';
+      }else if(f.field==='list'){
+        var listVal=(Array.isArray(val)?val:[]).join('\n');
+        html+='<div class="field"><label>'+f.label+'</label><textarea class="input" id="cm_'+f.id+'" rows="4">'+listVal.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>'+(f.hint?'<div class="cm-hint">'+f.hint+'</div>':'')+'</div>';
+      }else{
+        html+='<div class="field"><label>'+f.label+'</label><input class="input" id="cm_'+f.id+'" value="'+String(val==null?'':val).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+(f.hint?'<div class="cm-hint">'+f.hint+'</div>':'')+'</div>';
+      }
+    });
+    html+='</div>';
+    pane.innerHTML=html;
+  }
+  document.getElementById('tabs').addEventListener('click',function(e){
+    var b=e.target.closest('[data-tab]'); if(!b)return;
+    document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    render(b.dataset.tab);
+  });
+  document.getElementById('cmForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var tab=document.querySelector('#tabs button.on').dataset.tab;
+    TABS[tab].forEach(function(f){
+      if(!f.id)return;
+      var el=document.getElementById('cm_'+f.id); if(!el)return;
+      if(f.field==='list'){
+        setPath(C,f.id,el.value.split('\n').map(function(x){return x.trim();}).filter(Boolean));
+      }else{
+        setPath(C,f.id,el.value.trim());
+      }
+    });
+    App.saveContents(C);
+    var b=this.querySelector('button[type=submit]'); b.classList.add('loading'); b.disabled=true;
+    setTimeout(function(){ App.toast('Content updated. The public site reflects the change.'); b.classList.remove('loading'); b.disabled=false; },500);
+  });
+  render('home');
+})();
+</script>
+</body>
+</html>
+
+

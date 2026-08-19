@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics | Admin</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.an-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:1rem;align-items:start}
+.an-grid .full{grid-column:1/-1}
+.rank-row{display:flex;align-items:center;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
+.rank-row:last-child{border-bottom:0}
+.rank-num{width:26px;height:26px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex:none}
+.rank-row:nth-child(-n+3) .rank-num{background:var(--grad);color:#fff}
+.bar-track{flex:1;height:8px;background:var(--bg);border-radius:99px;overflow:hidden}
+.bar-track i{display:block;height:100%;background:var(--grad);border-radius:99px}
+.chip-btn.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+@media(max-width:920px){.an-grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body data-chrome="dash" data-active="an">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Deep dive</div><h2 style="font-family:var(--display)">Analytics</h2></div>
+        <div class="row" style="gap:.5rem" id="anRange">
+          <button class="chip-btn on">7d</button><button class="chip-btn">30d</button><button class="chip-btn">90d</button>
+        </div>
+      </div>
+
+      <div class="an-grid">
+        <div class="card full">
+          <div class="card-head"><h3>Booking trend</h3><span class="badge b-accent">Live</span></div>
+          <div class="card-body"><canvas id="trendChart" height="210" style="width:100%"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Booking sources</h3></div>
+          <div class="card-body"><div id="srcDonut"></div><div class="row mt-3" id="srcList" style="gap:.5rem;flex-wrap:wrap;justify-content:center"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Top rooms by revenue</h3><a class="export" th:href="@{/admin/reports}">Full report</a></div>
+          <div class="card-body" id="topRooms"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/core.js}"></script>
+<script th:inline="none">
+
+App.boot({guard:'admin'});
+App.renderDashChrome('an','Analytics',[{label:'Dashboard',href:'/admin/dashboard'},{label:'Reports',href:'/admin/reports'},{label:'Analytics',href:'#'}]);
+(function(){
+  App.Charts.line(document.getElementById('trendChart'),['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],[{name:'New bookings',data:[26,31,28,42,58,66,54]},{name:'Checked-in guests',data:[18,22,25,31,40,44,37]}],{h:200});
+  var srcs=[['Direct',24,'var(--accent)'],['Google',21,'var(--primary)'],['Booking.com',18,'#fbbf24'],['Trip.com',12,'#a78bfa'],['Social',9,'#34d399'],['Other',16,'#94a3b8']];
+  var ss=0; srcs.forEach(function(s){ss+=s[1];});
+  var acc=0, segs=[];
+  srcs.forEach(function(s){ segs.push(acc+((s[1]/ss)*100)); acc=segs[segs.length-1]; });
+  var donut='<svg viewBox="0 0 100 100" style="width:150px;height:150px;margin:0 auto;display:block">';
+  srcs.forEach(function(s,i){
+    var prev=i===0?0:segs[i-1];
+    var dash=s[1]/ss*100;
+    donut+='<circle cx="50" cy="50" r="42" fill="none" stroke="'+s[2]+'" stroke-width="16" stroke-dasharray="'+dash+' 100" stroke-dashoffset="'+(100-prev)+'" transform="rotate(-90 50 50)"/>';
+  });
+  donut+='</svg>';
+  document.getElementById('srcDonut').innerHTML=donut;
+  document.getElementById('srcList').innerHTML=srcs.map(function(s){ return '<span class="badge b-plain" style="display:inline-flex;align-items:center;gap:.35rem"><span style="width:8px;height:8px;border-radius:2px;background:'+s[2]+'"></span>'+s[0]+' '+s[1]+'%</span>'; }).join('');
+
+  var rooms=App.getRooms().slice().sort(function(a,b){ return b.popularity-a.popularity; }).slice(0,5);
+  var pmax=rooms.length?rooms[0].popularity:1;
+  document.getElementById('topRooms').innerHTML=rooms.map(function(r,i){
+    return '<div class="rank-row"><span class="rank-num">'+(i+1)+'</span><div style="width:34%"><div class="text-sm strong">'+App.esc(r.name)+'</div><div class="text-xs" style="color:var(--muted)">'+App.money(r.price)+'/night</div></div><div class="bar-track"><i style="width:'+Math.max(8,Math.round(r.popularity/pmax*100))+'%"></i></div><b style="font-size:.82rem">'+r.popularity+'</b></div>';
+  }).join('');
+
+  document.getElementById('anRange').addEventListener('click',function(e){
+    var b=e.target.closest('.chip-btn'); if(!b)return;
+    document.querySelectorAll('#anRange .chip-btn').forEach(function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    App.toast('Range updated to '+b.textContent+'.');
+  });
+})();
+</script>
+</body>
+</html>
+
+
+

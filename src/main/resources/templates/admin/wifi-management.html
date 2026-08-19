@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WiFi Management | Admin</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.wifi-hero{background:var(--grad);border-radius:var(--radius);padding:1.6rem 1.8rem;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.wifi-hero .ssid{font-family:var(--mono);font-weight:800;font-size:1.7rem;letter-spacing:-.02em}
+.wifi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.4rem}
+.wifi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem;box-shadow:var(--shadow-sm)}
+.wifi-card .wc-num{font-size:1.5rem;font-weight:800;font-family:var(--display)}
+.wifi-card .wc-lab{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.qr-box{background:#fff;border-radius:14px;padding:1rem;display:inline-block}
+</style>
+</head>
+
+<body data-chrome="dash" data-active="wf">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap" style="max-width:860px">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Network</div><h2 style="font-family:var(--display)">Guest WiFi</h2></div>
+      </div>
+      <div class="wifi-hero"><div><div class="text-sm" style="opacity:.85">Primary network</div><div class="ssid">Grand Meridian_5G</div></div><div><span class="badge b-soft" style="background:rgba(255,255,255,.18);color:#fff">Shared guest network</span></div></div>
+      <div class="wifi-grid" id="wifiStats"></div>
+      <div class="card">
+        <div class="card-head"><h3>WiFi settings</h3><button class="btn btn-primary btn-sm" id="saveWifi"><span class="spin"></span><span class="lbl">Save settings</span></button></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field"><label>SSID (network name)</label><input class="input" id="wSsid" value="Grand Meridian_5G"></div>
+            <div class="field"><label>Band</label><select class="input" id="wBand"><option>5 GHz</option><option>2.4 GHz</option><option>Dual band</option></select></div>
+            <div class="field"><label>Password</label><input class="input" id="wPass" value="gmpool2026" type="text"></div>
+            <div class="field"><label>Max devices per room</label><input class="input" id="wDev" type="number" value="6"></div>
+            <div class="field"><label>Bandwidth per guest (Mbps)</label><input class="input" id="wBw" type="number" value="50"></div>
+            <div class="field"><label>Security</label><select class="input" id="wSec"><option>WPA2</option><option>WPA3</option><option>Open (no password)</option></select></div>
+          </div>
+          <div class="row mt-3" style="gap:1.4rem;flex-wrap:wrap">
+            <label class="toggle"><input type="checkbox" id="wPortal" checked><span class="track"></span> Captive portal (login page)</label>
+            <label class="toggle"><input type="checkbox" id="wLimit" checked><span class="track"></span> Enforce per-guest bandwidth</label>
+          </div>
+          <div class="divider my-3"></div>
+          <div class="row between wrap">
+            <div><div class="strong">Guests sign-in screen</div><div class="text-sm" style="color:var(--muted)">Shown on the portal — scans a QR at the front desk.</div></div>
+            <div class="qr-box" style="text-align:center"><div style="font-size:2.6rem;font-family:var(--mono);font-weight:800;letter-spacing:.02em;background:repeating-linear-gradient(45deg,#0d3a36 0 6px,#e6f2f0 6px 12px);width:132px;height:132px;display:flex;align-items:center;justify-content:center;color:#fff;border-radius:8px;margin:0 auto">GM</div><div class="text-xs mt-1" style="color:var(--muted)">mock QR</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/core.js}"></script>
+<script>
+
+App.boot({guard:'staff'});
+App.renderDashChrome('aw','WiFi Management',[{label:'Dashboard',href:'/admin/dashboard'},{label:'WiFi',href:'#'}]);
+(function(){
+  document.getElementById('wifiStats').innerHTML=[
+    ['Devices online',App.getBookings().filter(function(b){return b.status==='active';}).length,'devices'],
+    ['Available channels','3','channels'],
+    ['Uptime','99.9%','this month'],
+    ['Peak bandwidth','86 Mbps','today']
+  ].map(function(x){ return '<div class="wifi-card"><div class="wc-lab">'+x[0]+'</div><div class="wc-num">'+x[1]+'</div><div class="text-sm" style="color:var(--muted)">'+x[2]+'</div></div>'; }).join('');
+  document.getElementById('saveWifi').addEventListener('click',function(){
+    var b=this; b.classList.add('loading'); b.disabled=true;
+    setTimeout(function(){ App.toast('WiFi settings saved.'); b.classList.remove('loading'); b.disabled=false; },600);
+  });
+})();
+</script>
+</body>
+</html>
+
+

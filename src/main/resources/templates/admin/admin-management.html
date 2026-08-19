@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Management | Super Admin</title>
+<meta name="description" content="Grand Meridian Resort - professional hotel booking management system">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/base.css}">
+<style>
+.adm-step{display:flex;align-items:center;gap:.8rem;padding:1.1rem 1.2rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm)}
+.adm-step .dot{width:34px;height:34px;border-radius:99px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.adm-step .dot.done{background:var(--grad);color:#fff}
+.adm-step + .adm-step{margin-top:.8rem}
+.icon-btn.danger-ico{color:var(--danger)}
+</style>
+</head>
+
+<body data-chrome="dash" data-active="aadm">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Super admin &middot; system access</div><h2 style="font-family:var(--display)">Admin accounts</h2><p>Only the super admin can create, block or remove admin accounts.</p></div>
+        <button class="btn btn-primary" id="addAdmin"><span data-icon="plus" class="icon" style="width:16px;height:16px"></span> Add admin</button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-head"><h3>Administrators</h3><span class="sub" id="admCount"></span></div>
+        <div class="table-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl" id="admTable"></table></div>
+      </div>
+
+      <div class="row" style="gap:1rem;flex-wrap:wrap">
+        <div class="card grow">
+          <div class="card-head"><h3>How it works</h3></div>
+          <div class="card-body">
+            <div class="adm-step"><span class="dot done">1</span><div><b>Add an admin</b><div class="text-sm" style="color:var(--muted)">Create an account with name, email and a password. New admins start as <span class="role-badge role-admin">Admin</span>.</div></div></div>
+            <div class="adm-step"><span class="dot">2</span><div><b>Block / unblock</b><div class="text-sm" style="color:var(--muted)">Temporarily restrict access. Blocked admins cannot sign in until unblocked.</div></div></div>
+            <div class="adm-step"><span class="dot">3</span><div><b>Remove</b><div class="text-sm" style="color:var(--muted)">Permanently delete an admin account when they leave your team.</div></div></div>
+          </div>
+        </div>
+        <div class="card" style="flex:1.4">
+          <div class="card-head"><h3>Role overview</h3></div>
+          <div class="card-body">
+            <div class="row" style="gap:.7rem;flex-wrap:wrap">
+              <span class="role-badge role-admin">Super admin</span><span class="role-badge role-admin">Admin</span><span class="role-badge role-staff">Staff</span>
+            </div>
+            <p class="legal mt-2">The super admin account keeps full control. Super admin accounts are never listed or removable from this page.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script th:src="@{/js/core.js}"></script>
+<script>
+
+App.boot({guard:'super'});
+App.renderDashChrome('aadm','Admin Management',[{label:'Dashboard',href:'/admin/dashboard'},{label:'Admins',href:'#'}]);
+(function(){
+  var tbl=document.getElementById('admTable');
+  function admins(){ return App.getUsers().filter(function(u){return u.role==='ADMIN';}); }
+  function self(){ return App.getCurrentUser(); }
+  function render(){
+    var list=admins();
+    document.getElementById('admCount').textContent=list.length+' account'+(list.length===1?'':'s');
+    if(!list.length){ tbl.innerHTML='<tr><td colspan="6" style="padding:2.4rem;text-align:center;color:var(--muted)">No admin accounts yet &mdash; add your first admin above.</td></tr>'; return; }
+    tbl.innerHTML='<thead><tr><th>Admin</th><th>Role</th><th>Last active</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead><tbody>'+
+    list.map(function(u){
+      return '<tr data-id="'+u.id+'"><td><div class="cell-user"><div class="avatar" style="background:var(--grad)">'+initials(u.name)+'</div><div><div class="nm">'+App.esc(u.name)+'</div><div class="em">'+App.esc(u.email)+'</div></div></div></td>'+
+      '<td><span class="role-badge role-admin">'+(u.role==='SUPER_ADMIN'?'Super Admin':'Admin')+'</span></td>'+
+      '<td class="text-sm" style="color:var(--muted)">'+App.shortDate(u.memberSince)+'</td>'+
+      '<td><span class="badge '+(u.status==='active'?'b-success':'b-danger')+'">'+(u.status==='blocked'?'Blocked':'Active')+'</span></td>'+
+      '<td class="actions">'+
+      '<button class="btn btn-soft btn-sm" data-toggle="'+u.id+'" title="'+(u.status==='blocked'?'Unblock':'Block')+'">'+App.icon(u.status==='blocked'?'checkCircle':'ban','icon')+'</button>'+
+      '<button class="btn btn-ghost btn-sm" data-edit="'+u.id+'">'+App.icon('edit','icon')+'</button>'+
+      '<button class="btn btn-ghost btn-sm" data-del="'+u.id+'">'+App.icon('trash','icon')+'</button>'+
+      '</td></tr>';
+    }).join('')+'</tbody>';
+    tbl.querySelectorAll('[data-toggle]').forEach(function(b){ b.addEventListener('click',function(){
+      var u=admins().find(function(x){return x.id===b.dataset.toggle;});
+      if(u.id===self().id){ App.toast('You cannot block your own account.','warning'); return; }
+      var nxt=u.status==='blocked'?'active':'blocked';
+      App.openConfirm((nxt==='blocked'?'Block admin?':'Unblock admin?'),(nxt==='blocked'?'Block '+u.name+' ('+u.email+')? They will not be able to sign in until unblocked.':'Let '+u.name+' ('+u.email+') sign in again?'),{variant:'danger',confirmText:nxt==='blocked'?'Block':'Unblock'}).then(function(ok){
+        if(!ok)return;
+        App.saveUsers(App.getUsers().map(function(x){ if(x.id===u.id){ x.status=nxt; } return x; }));
+        App.toast(u.name+' '+(nxt==='blocked'?'blocked.':'unblocked.'));
+        render();
+      });
+    }); });
+    tbl.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click',function(){
+      var u=admins().find(function(x){return x.id===b.dataset.del;});
+      if(u.id===self().id){ App.toast('You cannot delete your own account.','warning'); return; }
+      App.openConfirm('Delete admin?',
+        '<b>'+App.esc(u.name)+'</b><br>'+App.esc(u.email)+'<br><span class="role-badge role-admin">'+(u.role==='ADMIN'?'Admin':'Super Admin')+'</span><br><br>This account will be permanently removed and cannot be restored.',
+        {variant:'danger',confirmText:'Delete admin'}).then(function(ok){
+        if(!ok)return;
+        App.saveUsers(App.getUsers().filter(function(x){ return x.id!==u.id; }));
+        App.toast('Admin deleted.','info');
+        render();
+      });
+    }); });
+    tbl.querySelectorAll('[data-edit]').forEach(function(b){ b.addEventListener('click',function(){
+      var u=admins().find(function(x){return x.id===b.dataset.edit;});
+      App.openForm('Edit admin',[
+        {id:'aName',label:'Name',type:'text',value:u.name,req:true},
+        {id:'aEmail',label:'Email',type:'email',value:u.email,req:true},
+        {id:'aRole',label:'Role',type:'select',value:'ADMIN',options:['ADMIN']},
+        {id:'aStatus',label:'Status',type:'select',value:u.status,options:['active:Active','blocked:Blocked']}
+      ],'Save').then(function(v){
+        if(!v)return;
+        u.name=v.aName; u.email=v.aEmail; u.role='ADMIN'; u.status=v.aStatus;
+        App.saveUsers(App.getUsers());
+        App.toast('Admin updated.');
+        render();
+      });
+    }); });
+  }
+  function initials(n){ return n.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase(); }
+  document.getElementById('addAdmin').addEventListener('click',function(){
+    App.openForm('Add admin',[
+      {id:'aName',label:'Full name',type:'text',req:true,placeholder:'e.g. Nusrat Jahan'},
+      {id:'aEmail',label:'Email',type:'email',req:true,placeholder:'admin@hotel.com'},
+      {id:'aPass',label:'Password',type:'password',req:true,placeholder:'Min 6 characters'},
+      {id:'aPass2',label:'Confirm password',type:'password',req:true,placeholder:'Repeat password'},
+      {id:'aRole',label:'Role',type:'select',value:'ADMIN',options:['ADMIN']}
+    ],'Create admin').then(function(v){
+      if(!v)return;
+      if(v.aPass.length<6){ App.toast('Password must be at least 6 characters.','warning'); return; }
+      if(v.aPass!==v.aPass2){ App.toast('Passwords do not match.','warning'); return; }
+      var existing=App.getUsers().filter(function(x){return x.email.toLowerCase()===v.aEmail.toLowerCase();})[0];
+      if(existing){ App.toast('An account with this email already exists.','warning'); return; }
+      var nu={id:'u'+Date.now(),name:v.aName,email:v.aEmail,phone:'',role:'ADMIN',status:'active',password:v.aPass,address:'',memberSince:new Date().toISOString(),image:'',bookings:0};
+      var us=App.getUsers(); us.push(nu); App.saveUsers(us);
+      App.toast(v.aName+' added as an admin.');
+      render();
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>
+
+
