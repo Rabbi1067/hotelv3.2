@@ -1,0 +1,50 @@
+﻿<!--PAGE-TITLE-->My Favorites | Grand Meridian Resort
+<!--PAGE-BODY-->
+<body data-chrome="dash" data-active="uf">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="section-title">
+        <div class="row between wrap"><div><div class="eyebrow">Saved for later</div><h2 style="font-family:var(--display)">Favorite Rooms</h2><p id="favNote"></p></div>
+        <a class="btn btn-primary" href="search-rooms.html"><span data-icon="plus" class="icon" style="width:16px;height:16px"></span> Discover more rooms</a></div>
+      </div>
+      <div class="rooms-grid" id="favGrid"></div>
+    </div>
+  </main>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'user'});
+App.renderDashChrome('uf','Favorites',[{label:'Dashboard',href:'dashboard.html'},{label:'Favorites',href:'#'}]);
+(function(){
+  var grid=document.getElementById('favGrid');
+  function render(){
+    var rooms=App.favs().map(App.roomById).filter(Boolean);
+    document.getElementById('favNote').textContent=rooms.length?'You have '+rooms.length+' saved room'+(rooms.length>1?'s':'')+'. Favorites are saved on this device.' : '';
+    if(!rooms.length){
+      grid.innerHTML=App.emptyState('heart','No favorites yet','Tap the heart icon on any room to keep it here for quick booking.','<a class="btn btn-primary btn-sm" href="search-rooms.html">Browse rooms</a>');
+      return;
+    }
+    grid.innerHTML=rooms.map(function(r){
+      var pct=r.discount||0, final=r.price-(r.price*pct/100);
+      return '<article class="room-card" data-id="'+r.id+'"><div class="rc-img"><img src="'+r.images[0]+'" alt="" loading="lazy">'+(pct?'<span class="discount-pill">'+pct+'% OFF</span>':'')+
+      '<button class="rc-fav active" data-fav aria-label="Remove">'+App.icon('heart','icon')+'</button></div>'+
+      '<div class="rc-body"><div class="rc-type">'+r.type+'</div>'+
+      '<div class="rc-rate"><span class="stars">'+App.stars(r.rating)+'</span><b>'+r.rating+'</b><span>('+r.reviews+')</span></div>'+
+      '<h3 class="rc-title">'+r.name+'</h3>'+
+      '<div class="rc-meta"><span data-icon="users" class="icon" style="width:14px;height:14px"></span> '+r.capacity+' Guests &bull; '+r.beds+'</div>'+
+      '<div class="rc-price"><span class="now">'+App.money(final)+'</span><span class="per">/ night</span>'+(pct?'<span class="strike">'+App.money(r.price)+'</span>':'')+'</div>'+
+      '<div class="rc-foot"><a class="btn btn-outline btn-sm" href="room-details.html?id='+r.id+'">Details</a><a class="btn btn-primary btn-sm" href="booking.html?room='+r.id+'">Book Now</a></div></div></article>';
+    }).join('');
+    grid.querySelectorAll('[data-fav]').forEach(function(b){
+      b.addEventListener('click',function(){
+        App.toggleFav(b.closest('.room-card').dataset.id);
+        App.toast('Removed from favorites','info');
+        render();
+      });
+    });
+  }
+  render();
+})();

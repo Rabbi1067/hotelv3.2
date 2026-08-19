@@ -1,0 +1,77 @@
+﻿<!--PAGE-TITLE-->Gallery Management | Admin
+<!--PAGE-CSS-->
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem}
+.gal-item{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:4/3;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.gal-item img{width:100%;height:100%;object-fit:cover;display:block;transition:.2s}
+.gal-item:hover img{transform:scale(1.04)}
+.gal-meta{position:absolute;inset:auto 0 0 0;padding:.5rem .7rem;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff;font-size:.78rem;display:flex;justify-content:space-between;align-items:center}
+.gal-btn{position:absolute;top:.5rem;right:.5rem;opacity:0;transition:.15s}
+.gal-item:hover .gal-btn{opacity:1}
+<!--PAGE-BODY-->
+<body data-chrome="dash" data-active="ag">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Media</div><h2 style="font-family:var(--display)">Hotel gallery</h2></div>
+        <div class="row" style="gap:.6rem">
+          <button class="btn btn-ghost btn-sm" id="galReset">Reset to defaults</button>
+          <button class="btn btn-primary" id="galAdd"><span data-icon="plus" class="icon" style="width:16px;height:16px"></span> Add photo</button>
+        </div>
+      </div>
+      <div class="gal-grid" id="galGrid"></div>
+    </div>
+  </main>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'admin'});
+App.renderDashChrome('ag','Gallery Management',[{label:'Dashboard',href:'dashboard.html'},{label:'Gallery',href:'#'}]);
+(function(){
+  var grid=document.getElementById('galGrid');
+  function all(){ return App.getGallery(); }
+  function render(){
+    var list=all();
+    if(!list.length){ grid.innerHTML=App.emptyState('image','No photos yet','Add photos of your hotel to show off to guests.'); return; }
+    grid.innerHTML=list.map(function(g){
+      return '<div class="gal-item" data-id="'+g.id+'">'+
+      '<img src="'+g.img+'" alt="'+App.esc(g.title)+'" loading="lazy">'+
+      '<button class="gal-btn btn btn-dark btn-sm" data-del="'+g.id+'">'+App.icon('trash','icon')+'</button>'+
+      '<div class="gal-meta"><span>'+App.esc(g.title)+'</span><span>'+g.cat+'</span></div>'+
+      '</div>';
+    }).join('');
+    grid.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click',function(){
+      var g=all().find(function(x){return x.id===b.dataset.del;});
+      App.openConfirm('Delete photo?','"'+g.title+'" will be removed from the gallery.').then(function(ok){
+        if(!ok)return;
+        App.saveGallery(all().filter(function(x){return x.id!==g.id;}));
+        App.toast('Photo removed.','info');
+        render();
+      });
+    }); });
+  }
+  function add(){
+    App.openForm('Add gallery photo',[
+      {id:'gKey',label:'Preset scene',type:'select',value:'',options:['exteriorNight','lobby','pool','suite','restaurant','rooftop','spa','gym','bed6','bar']},
+      {id:'gTitle',label:'Caption',type:'text',req:true,placeholder:'e.g. Infinity pool at sunset'},
+      {id:'gCat',label:'Category',type:'select',value:'facility',options:['hotel','facility','room','dining']}
+    ],'Add photo').then(function(v){
+      if(!v)return;
+      App.saveGallery(all().concat({id:'g'+Date.now(),img:App.ph(v.gKey,800),title:v.gTitle,category:v.gCat,cat:v.gCat,featured:false}));
+      App.toast('Photo added to gallery.');
+      render();
+    });
+  }
+  document.getElementById('galAdd').addEventListener('click',add);
+  document.getElementById('galReset').addEventListener('click',function(){
+    App.openConfirm('Reset gallery?','This restores the default photo set and removes custom photos.').then(function(ok){
+      if(!ok)return;
+      localStorage.removeItem('hv_gallery');
+      App.toast('Gallery reset.');
+      render();
+    });
+  });
+  render();
+})();

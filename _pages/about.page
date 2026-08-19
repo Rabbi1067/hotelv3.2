@@ -1,0 +1,90 @@
+<!--PAGE-TITLE-->About | Grand Meridian Resort
+<!--PAGE-CSS-->
+.about-hero{position:relative;border-radius:var(--radius-lg);overflow:hidden;color:#fff;padding:5rem 1.5rem;text-align:center;background:linear-gradient(135deg,#0a201e,#123f3b)}
+.about-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.42}
+.about-hero .in{position:relative;z-index:2}
+.about-hero h1{font-family:var(--display);color:#fff;font-size:clamp(2rem,4.5vw,3rem)}
+.about-hero p{color:rgba(255,255,255,.85);max-width:640px;margin:1rem auto 0}
+.timeline{position:relative;padding-left:1.8rem}
+.timeline:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--border-strong)}
+.tl-item{position:relative;padding:0 0 1.6rem}
+.tl-item:before{content:"";position:absolute;left:-1.8rem;top:6px;width:14px;height:14px;border-radius:50%;background:var(--primary);border:3px solid var(--surface);box-shadow:0 0 0 2px var(--primary-soft)}
+.tl-item .y{color:var(--accent);font-weight:800;font-size:.85rem;letter-spacing:.05em}
+.tl-item h4{font-size:1rem;margin:.2rem 0}
+.tl-item p{color:var(--muted);font-size:.87rem;max-width:520px}
+.value-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-top:1.5rem}
+.values h2{font-family:var(--display)} 
+<!--PAGE-BODY-->
+<body data-chrome="public" data-active="about">
+<nav class="site-bar" data-site-nav></nav>
+
+<div class="container" style="padding-top:2rem">
+  <div class="breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span class="cur">About</span></div>
+
+  <div class="about-hero">
+    <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1600&q=70" alt="">
+    <div class="in">
+      <h1 id="aTitle">A destination in itself</h1>
+      <p id="aText">Since 2016, Grand Meridian Resort has welcomed travellers from more than 60 countries to a quiet stretch of shoreline. Our philosophy is simple: anticipate, don't intrude.</p>
+    </div>
+  </div>
+
+  <section class="block">
+    <div class="stats-grid" id="statsGrid"></div>
+  </section>
+
+  <section class="block">
+    <div class="split" style="grid-template-columns:1fr 1.2fr;align-items:start">
+      <div>
+        <div class="eyebrow" style="color:var(--accent);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.72rem">Our story</div>
+        <h2 class="mt-2" style="font-family:var(--display)">Ten years beside the bay</h2>
+        <div class="timeline mt-4">
+          <div class="tl-item"><div class="y">2016</div><h4>Opening season</h4><p>Grand Meridian opened with 96 rooms, a staff of 140 and a simple promise of unhurried luxury on Cox's Bazar's longest beach.</p></div>
+          <div class="tl-item"><div class="y">2019</div><h4>The skyline wing</h4><p>Our rooftop lounge and 42-room skyline wing opened, adding a new perspective of the coastline.</p></div>
+          <div class="tl-item"><div class="y">2022</div><h4>Wellness first</h4><p>The rooftop spa, fitness studio and ayurvedic menu launched, placing wellbeing at the heart of every stay.</p></div>
+          <div class="tl-item"><div class="y">2025</div><h4>Going digital</h4><p>We rebuilt the entire guest journey online — bookings, payments, room service and check-in — one seamless experience.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:var(--accent);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.72rem">What we believe</div>
+        <h2 class="mt-2" style="font-family:var(--display)">Hospitality, considered</h2>
+        <div class="value-grid">
+          <div class="feature-card"><div class="ico ico-primary"></div><h3>Effortless stays</h3><p>Self-service booking, mobile check-in and one-tap room service make your time here effortless.</p></div>
+          <div class="feature-card"><div class="ico ico-accent"></div><h3>Locally rooted</h3><p>Seafood from the morning market, spices from hill farms, and a team that calls Cox's Bazar home.</p></div>
+          <div class="feature-card"><div class="ico ico-success"></div><h3>Quiet luxury</h3><p>Natural materials, calm palettes and considered details — luxury that never shouts.</p></div>
+          <div class="feature-card"><div class="ico ico-info"></div><h3>Wellbeing</h3><p>Spa rituals, yoga at dawn and a private stretch of sand reserved for hotel guests.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-title"><div class="eyebrow">Beyond the room</div><h2 style="font-family:var(--display)">Facilities</h2></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div class="feature-card"><div class="ico ico-primary"></div><h3>Infinity pool</h3><p>A 25-metre heated pool overlooking the bay, open until midnight.</p></div>
+      <div class="feature-card"><div class="ico ico-success"></div><h3>Signature dining</h3><p>Three restaurants from ocean-grill to rooftop fine dining.</p></div>
+      <div class="feature-card"><div class="ico ico-accent"></div><h3>Spa &amp; fitness</h3><p>Six treatment rooms, sauna, steam and a 24h fitness studio.</p></div>
+      <div class="feature-card"><div class="ico ico-warning"></div><h3>Business lounge</h3><p>Quiet co-working with high-speed WiFi and meeting rooms.</p></div>
+      <div class="feature-card"><div class="ico ico-info"></div><h3>Kids club</h3><p>Supervised play, movies and craft sessions for little guests.</p></div>
+      <div class="feature-card"><div class="ico ico-plain"></div><h3>Private beach</h3><p>A sunbed-lined stretch reserved exclusively for resort guests.</p></div>
+    </div>
+  </section>
+</div>
+
+<div id="footslot"></div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'public'});
+(function(){
+  var C=App.getContents();
+  document.getElementById('aTitle').textContent=C.aboutTitle;
+  document.getElementById('aText').textContent=C.aboutText;
+  document.getElementById('statsGrid').innerHTML=[
+    {k:C.stats.rooms,v:C.stats.labelRooms},{k:C.stats.guests,v:C.stats.labelGuests},{k:C.stats.years,v:C.stats.labelYears},{k:C.stats.rating,v:C.stats.labelRating}
+  ].map(function(s){ return '<div class="stat"><div class="n">'+s.k+'</div><div class="l">'+s.v+'</div></div>'; }).join('');
+  $$('.ico').forEach(function(el){
+    var cl=el.className.replace('ico','').trim();
+    var ic=cl.indexOf('primary')>-1?'sun':cl.indexOf('accent')>-1?'car':cl.indexOf('success')>-1?'sparkles':cl.indexOf('info')>-1?'bar':cl.indexOf('warning')>-1?'coffee':cl.indexOf('plain')>-1?'sun':'home';
+    el.innerHTML=App.icon(cl.indexOf('info')>-1?'activity':ic,'icon');
+  });
+})();

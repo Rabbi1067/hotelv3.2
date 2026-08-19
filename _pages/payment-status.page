@@ -1,0 +1,73 @@
+﻿<!--PAGE-TITLE-->Payment Status | Grand Meridian Resort
+<!--PAGE-CSS-->
+.gw-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.6rem}
+.gw-chip{display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--border);border-radius:10px;padding:.5rem .8rem;font-weight:650;font-size:.85rem;background:var(--surface-2)}
+.gw-chip .icon{color:var(--muted)}
+<!--PAGE-BODY-->
+<body data-chrome="dash" data-active="up">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="section-title"><div class="eyebrow">Billing center</div><h2 style="font-family:var(--display)">Payment status</h2><p>Track what's owed, what's settled, and pay directly with your preferred method.</p></div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))" id="payKpis"></div>
+
+      <div class="card mb-3"><div class="card-head"><h3>Bookings &amp; payments</h3><span class="sub">Payments are simulated in this prototype</span></div>
+        <div class="table-wrap" style="border:0;border-radius:0;box-shadow:none"><table class="tbl" id="payTbl"></table></div>
+      </div>
+
+      <div class="card"><div class="card-head"><h3>Payment methods</h3><span class="sub">Available after backend gateway integration</span></div>
+        <div class="card-body">
+          <p class="text-sm" style="color:var(--muted)">Real payment routing (bKash, Nagad, Stripe, PayPal and bank transfer) will be connected in the backend phase. The UI is ready.</p>
+          <div class="gw-row" id="gwChips"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'user'});
+App.renderDashChrome('up','Payment Status',[{label:'Dashboard',href:'dashboard.html'},{label:'Payments',href:'#'}]);
+(function(){
+  var cu=App.getCurrentUser();
+  var books=App.getBookings().filter(function(b){return b.userId===cu.id&&b.status!=='cancelled';});
+  var paid=books.filter(function(b){return b.payment==='paid';});
+  var unpaid=books.filter(function(b){return b.payment==='unpaid';});
+  var paidSum=paid.reduce(function(a,b){return a+b.totalAmount;},0);
+  var unSum=unpaid.reduce(function(a,b){return a+b.totalAmount;},0);
+  document.getElementById('payKpis').innerHTML=
+    '<div class="kpi"><div class="ico ico-danger">'+App.icon('card','icon')+'</div><div><div class="k-val">'+App.money(unSum)+'</div><div class="k-lab">Outstanding balance</div></div></div>'+
+    '<div class="kpi"><div class="ico ico-success">'+App.icon('checkCircle','icon')+'</div><div><div class="k-val">'+App.money(paidSum)+'</div><div class="k-lab">Paid total</div></div></div>'+
+    '<div class="kpi"><div class="ico ico-warning">'+App.icon('clock','icon')+'</div><div><div class="k-val">'+unpaid.length+'</div><div class="k-lab">Unpaid bookings</div></div></div>'+
+    '<div class="kpi"><div class="ico ico-info">'+App.icon('dollar','icon')+'</div><div><div class="k-val">'+books.reduce(function(a,b){return a+b.totalAmount;},0)+'</div><div class="k-lab">Lifetime spend</div></div></div>';
+  var sum=books.reduce(function(a,b){return a+b.totalAmount;},0);
+  function row(b){
+    return '<tr><td class="primary-id">'+b.bookingId+'</td><td><div class="cell-room"><img src="'+b.roomImage+'" alt=""><div><div class="rn">'+App.esc(b.roomName)+'</div><div class="rt">'+App.fmtDate(b.checkIn)+' &rarr; '+App.fmtDate(b.checkOut)+'</div></div></div></td>'+
+    '<td class="amt">'+App.money(b.totalAmount)+'</td>'+
+    '<td><span class="badge '+(b.payment==='paid'?'b-success':'b-warning')+'">'+(b.payment==='paid'?'Paid':'Unpaid')+'</span></td>'+
+    '<td><span class="badge b-plain">'+App.cap(b.status)+'</span></td>'+
+    '<td class="actions">'+(b.payment==='unpaid'?'<button class="btn btn-soft btn-sm" data-pay="'+b.id+'">Pay now (demo)</button>':'')+'<a class="btn btn-outline btn-sm" href="booking-details.html?id='+b.id+'">View</a></td></tr>';
+  }
+
+  var t=document.getElementById('payTbl');
+  if(!books.length) document.getElementById('payTbl').parentElement.innerHTML=App.emptyState('card','No payments yet','Bookings and their payment status will appear here.');
+  else{
+    t.innerHTML='<thead><tr><th>Booking</th><th>Room</th><th>Amount</th><th>Payment</th><th>Booking</th><th style="text-align:right">Actions</th></tr></thead><tbody>'+books.map(row).join('')+'</tbody>';
+    t.querySelectorAll('[data-pay]').forEach(function(b){
+      b.addEventListener('click',function(){
+        var id=b.dataset.pay;
+        App.openConfirm('Mark as paid (demo)','In production this opens bKash/Nagad/Stripe/PayPal. For the prototype we simulate payment success for booking '+id+'.').then(function(ok){
+          if(!ok)return;
+          App.saveBookings(App.getBookings().map(function(x){ if(x.id!==id)return x; x.payment='paid'; return x; }));
+          App.toast('Payment recorded. Thank you!');
+          setTimeout(function(){ location.reload(); },500);
+        });
+      });
+    });
+  }
+  var gws=[['wallet','bKash'],['wallet','Nagad'],['card','Stripe'],['dollar','PayPal'],['landmark','Bank transfer'],['shield','Cash at desk']];
+  document.getElementById('gwChips').innerHTML=gws.map(function(g){ return '<span class="gw-chip">'+App.icon(g[0],'icon')+g[1]+'</span>'; }).join('');
+})();

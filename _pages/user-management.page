@@ -1,0 +1,187 @@
+﻿<!--PAGE-TITLE-->User Management | Admin
+<!--PAGE-CSS-->
+.us-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.2rem}
+main[data-ug]{display:none}
+<!--PAGE-BODY-->
+<body data-chrome="dash" data-active="au">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main data-ug="staff">
+    <div class="page-wrap">
+      <div class="section-title"><div class="eyebrow">Guest directory</div><h2 style="font-family:var(--display)">Guests</h2><p>Current and past guests of the resort with their latest stay details.</p></div>
+
+      <div class="toolbar">
+        <div class="input-affix" style="width:260px"><span data-icon="search"></span><input class="input" id="gQ" placeholder="Search guests..."></div>
+      </div>
+      <div class="card"><div class="table-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl" id="gTbl"></table></div></div>
+    </div>
+  </main>
+  <main data-ug="admin">
+    <div class="page-wrap">
+      <div class="row between wrap mb-3">
+        <div class="section-title" style="margin:0"><div class="eyebrow">Accounts</div><h2 style="font-family:var(--display)">Guests &amp; staff</h2></div>
+        <button class="btn btn-primary" id="addUser"><span data-icon="plus" class="icon" style="width:16px;height:16px"></span> Add user</button>
+      </div>
+
+      <div class="us-stats" id="usStats"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="row" style="gap:.6rem;flex-wrap:wrap;width:100%">
+            <div class="input-affix" style="width:260px"><span data-icon="search"></span><input class="input" id="usSearch" placeholder="Search by name, email or phone..."></div>
+            <select class="input" id="usRole" style="width:auto"><option value="">All roles</option><option value="USER">Guest</option><option value="STAFF">Staff</option><option value="ADMIN">Admin</option><option value="SUPER_ADMIN">Super admin</option></select>
+            <select class="input" id="usStatus" style="width:auto"><option value="">All statuses</option><option>active</option><option>inactive</option><option>blocked</option></select>
+          </div>
+        </div>
+        <div class="table-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl" id="usTable"></table></div>
+        <div id="usPager"></div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'staff'});
+App.renderDashChrome(App.getCurrentUser().role==='STAFF'?'sgu':'au','Users',[{label:'Dashboard',href:'dashboard.html'},{label:'Guests',href:'#'}]);
+(function(){
+  var isStaff=App.getCurrentUser().role==='STAFF';
+  var panes=document.querySelectorAll('main[data-ug]');
+  for(var i=0;i<panes.length;i++){ panes[i].style.display=(panes[i].getAttribute('data-ug')===(isStaff?'staff':'admin'))?'block':'none'; }
+  if(isStaff)staffInit(); else adminInit();
+
+  function staffInit(){
+    var q='';
+    function render(){
+      var users=App.getUsers().filter(function(u){ return u.role==='USER'; });
+      var books=App.getBookings();
+      function latest(u){ return books.filter(function(b){return b.userId===u.id;}).sort(function(a,b){return a.checkIn<b.checkIn?1:-1;})[0]||null; }
+      if(q){ users=users.filter(function(u){ return (u.name+' '+u.email+' '+u.phone).toLowerCase().indexOf(q.toLowerCase())>-1; }); }
+      var tbl=document.getElementById('gTbl');
+      if(!users.length){ tbl.innerHTML='<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--muted)">No guests found.</td></tr>'; return; }
+      tbl.innerHTML='<thead><tr><th>Guest</th><th>Contact</th><th>Member since</th><th>Status</th><th>Latest stay</th><th style="text-align:right">Action</th></tr></thead><tbody>'+
+      users.map(function(u){
+        var b=latest(u);
+        var stays=books.filter(function(x){return x.userId===u.id;}).length;
+        return '<tr><td><div class="cell-user">'+App.avatarHTML(u,'avatar sm')+'<div><div class="nm">'+App.esc(u.name)+'</div><div class="em">'+(u.address?App.esc(u.address):'')+'</div></div></div></td>'+
+        '<td><div class="cell-user"><div><div class="nm">'+App.esc(u.email)+'</div><div class="em">'+App.esc(u.phone||'')+'</div></div></div></td>'+
+        '<td>'+App.fmtDate(u.memberSince||new Date())+'</td>'+
+        '<td><span class="badge '+(u.status==='active'?'b-success':u.status==='blocked'?'b-danger':'b-warning')+'">'+App.cap(u.status)+'</span></td>'+
+        '<td>'+(b?('<div class="rr-title" style="font-size:.82rem">'+App.esc(b.roomName)+'</div><div class="text-xs" style="color:var(--muted)">'+b.bookingId+' &bull; '+App.fmtDate(b.checkIn)+'</div>'):'<span class="text-sm" style="color:var(--muted)">No stays</span>')+'</td>'+
+        '<td class="actions"><a class="btn btn-ghost btn-sm" href="booking-management.html?g='+encodeURIComponent(u.email)+'">View</a> '+(b?'<span class="badge b-plain">'+stays+' stay'+(stays>1?'s':'')+'</span>':'')+'</td></tr>';
+      }).join('')+'</tbody>';
+    }
+    document.getElementById('gQ').addEventListener('input',App.debounce(function(){ q=this.value; render(); },250));
+    render();
+  }
+
+  function adminInit(){
+    var st={q:'',role:'',status:'',page:1,per:8};
+    var users=App.getUsers();
+    var ROLE_B={SUPER_ADMIN:'role-admin',ADMIN:'role-admin',STAFF:'role-staff',USER:'role-guest'};
+    function bookingsCount(u){ return App.getBookings().filter(function(b){return b.userId===u.id;}).length; }
+    document.getElementById('usStats').innerHTML=[
+      ['users','primary','Total users',users.length],
+      ['shield','success','Active',users.filter(function(u){return u.status==='active';}).length],
+      ['briefcase','info','Staff &amp; admins',users.filter(function(u){return u.role!=='USER';}).length],
+      ['alert','warning','Inactive / blocked',users.filter(function(u){return u.status!=='active';}).length]
+    ].map(function(x){ return '<div class="kpi"><div class="ico ico-'+x[2]+'">'+App.icon(x[0],'icon')+'</div><div><div class="k-val">'+x[3]+'</div><div class="k-lab">'+x[1]+'</div></div></div>'; }).join('');
+
+    var tbl=document.getElementById('usTable');
+    function filtered(){
+      return users.filter(function(u){
+        if(st.role&&u.role!==st.role)return false;
+        if(st.status&&u.status!==st.status)return false;
+        if(st.q){ var h=(u.name+' '+u.email+' '+(u.phone||'')).toLowerCase(); if(h.indexOf(st.q.toLowerCase())===-1)return false; }
+        return true;
+      });
+    }
+    function render(){
+      var res=filtered();
+      var pages=Math.max(1,Math.ceil(res.length/st.per));
+      if(st.page>pages)st.page=pages;
+      var slice=res.slice((st.page-1)*st.per,st.page*st.per);
+      if(!res.length){ tbl.innerHTML='<tr><td colspan="7" style="padding:2.4rem;text-align:center;color:var(--muted)">No users match your filters.</td></tr>'; }
+      else tbl.innerHTML='<thead><tr><th>User</th><th>Role</th><th>Contact</th><th>Bookings</th><th>Joined</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead><tbody>'+
+      slice.map(function(u){
+        return '<tr data-id="'+u.id+'">'+
+        '<td><div class="cell-user"><div class="avatar" style="background:var(--grad)">'+App.esc(initials(u.name))+'</div><div><div class="nm">'+App.esc(u.name)+'</div><div class="em">'+App.esc(u.email)+'</div></div></div></td>'+
+        '<td><span class="role-badge '+(ROLE_B[u.role]||'role-guest')+'">'+(u.role!=='USER'?'<span data-icon="shield" style="width:11px;height:11px"></span>':'')+App.roleLabel(u.role)+'</span></td>'+
+        '<td class="text-sm">'+(u.phone||'&mdash;')+'</td>'+
+        '<td><b>'+bookingsCount(u)+'</b></td>'+
+        '<td class="text-sm">'+(App.month(u.memberSince)||'&mdash;')+'</td>'+
+        '<td><span class="badge '+(u.status==='active'?'b-success':u.status==='blocked'?'b-danger':'b-plain')+'">'+App.cap(u.status)+'</span></td>'+
+        '<td class="actions">'+
+        '<button class="btn btn-ghost btn-sm" data-view="'+u.id+'" title="View">'+App.icon('eye','icon')+'</button>'+
+        '<button class="btn btn-ghost btn-sm" data-edit="'+u.id+'" title="Edit">'+App.icon('edit','icon')+'</button>'+
+        (u.role==='USER'||u.role==='STAFF'?'<button class="btn btn-ghost btn-sm" data-rm="'+u.id+'" title="Delete">'+App.icon('trash','icon')+'</button>':'')+
+        '</td></tr>';
+      }).join('')+'</tbody>';
+      document.getElementById('usPager').innerHTML=App.pagination(st.page,pages);
+      App.initPager(document.getElementById('usPager'),function(p){ st.page=p; render(); });
+    }
+
+    function initials(n){ return n.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase(); }
+    document.getElementById('usSearch').addEventListener('input',App.debounce(function(){ st.q=this.value; st.page=1; render(); },250));
+    document.getElementById('usRole').addEventListener('change',function(){ st.role=this.value; st.page=1; render(); });
+    document.getElementById('usStatus').addEventListener('change',function(){ st.status=this.value; st.page=1; render(); });
+
+    function openUser(u,isEdit){
+      var adminCheck=isEdit&&(u.role==='ADMIN'||u.role==='SUPER_ADMIN');
+      App.openForm('User details',[
+        {id:'uName',label:'Full name',type:'text',value:u.name,req:true},
+        {id:'uEmail',label:'Email',type:'email',value:u.email,req:true},
+        {id:'uPhone',label:'Phone',type:'text',value:u.phone||''},
+        {id:'uRole',label:'Role',type:'select',value:u.role,options:['USER','STAFF','ADMIN','SUPER_ADMIN'],disabled:adminCheck},
+        {id:'uStatus',label:'Status',type:'select',value:u.status,options:['active','inactive','blocked']}
+      ],'Save changes').then(function(v){
+        if(!v)return;
+        u.name=v.uName; u.email=v.uEmail; u.phone=v.uPhone;
+        u.role=adminCheck?u.role:v.uRole; u.status=v.uStatus;
+        App.saveUsers(users);
+        App.toast('User updated.');
+        render();
+      });
+    }
+    tbl.addEventListener('click',function(e){
+      var view=e.target.closest('[data-view]'), ed=e.target.closest('[data-edit]'), rm=e.target.closest('[data-rm]');
+      var tr=e.target.closest('tr'); if(!tr)return;
+      var u=users.find(function(x){return x.id===tr.dataset.id;});
+      if(view){ App.openForm('User details',[
+        {label:'Name',type:'label',value:u.name},
+        {label:'Email',type:'label',value:u.email},
+        {label:'Phone',type:'label',value:u.phone||'—'},
+        {label:'Role',type:'label',value:App.roleLabel(u.role)},
+        {label:'Status',type:'label',value:App.cap(u.status)},
+        {label:'Joined',type:'label',value:App.month(u.memberSince)||'—'},
+        {label:'Total bookings',type:'label',value:bookingsCount(u)}
+      ],'Close').then(function(){}); }
+      if(ed)openUser(u,true);
+      if(rm){
+        App.openConfirm('Delete user?',u.name+' and all related account data will be removed.').then(function(ok){
+          if(!ok)return;
+          App.saveUsers(users.filter(function(x){return x.id!==u.id;}));
+          users=App.getUsers();
+          App.toast('User deleted.','info');
+          render();
+        });
+      }
+    });
+    document.getElementById('addUser').addEventListener('click',function(){
+      App.openForm('Add new user',[
+        {id:'uName',label:'Full name',type:'text',req:true},
+        {id:'uEmail',label:'Email',type:'email',req:true},
+        {id:'uPhone',label:'Phone',type:'text'},
+        {id:'uRole',label:'Role',type:'select',value:'USER',options:['USER','STAFF']},
+        {id:'uStatus',label:'Status',type:'select',value:'active',options:['active','inactive']}
+      ],'Create user').then(function(v){
+        if(!v)return;
+        var nu={id:'u'+Date.now(),name:v.uName,email:v.uEmail,phone:v.uPhone||'',role:v.uRole,status:v.uStatus,password:'',address:'',memberSince:new Date().toISOString(),image:'',bookings:0};
+        users.push(nu); App.saveUsers(users);
+        App.toast('User created.');
+        render();
+      });
+    });
+    render();
+  }
+})();

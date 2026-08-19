@@ -1,0 +1,108 @@
+﻿<!--PAGE-TITLE-->Food Cart &amp; Orders | Grand Meridian Resort
+<!--PAGE-CSS-->
+.ord-head{display:flex;align-items:center;gap:.6rem}
+.ord-row td{vertical-align:middle}
+.qty button{border-color:var(--border-strong)}
+<!--PAGE-BODY-->
+<body data-chrome="dash" data-active="uord">
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <header class="topbar" id="topbar"></header>
+  <main>
+    <div class="page-wrap">
+      <div class="section-title"><div class="eyebrow">Almost there</div><h2 style="font-family:var(--display)">Your order</h2><p>Review items, adjust quantities and place your order. It arrives at your room in minutes.</p></div>
+
+      <div id="cartView">
+        <div class="card"><div class="card-head"><h3>Items</h3><a class="btn btn-outline btn-sm" href="food-services.html"><span data-icon="plus" class="icon" style="width:15px;height:15px"></span> Add more items</a></div>
+          <div class="table-wrap" style="border:0;box-shadow:none"><table class="tbl" id="cartTbl"></table></div>
+          <div class="card-body row between wrap" style="gap:1rem">
+            <div class="row" style="gap:.6rem">
+              <div class="field" style="margin:0;min-width:200px"><label class="text-xs" style="font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Deliver to</label>
+                <select class="input" id="delivRoom"><option>My current room</option><option>Lobby pickup</option><option>Pool deck</option><option>Rooftop lounge</option></select></div>
+            </div>
+            <div style="text-align:right"><div class="text-sm" style="color:var(--muted)">Estimated total</div><div class="text-lg strong" id="estTot" style="font-size:1.6rem">$0</div>
+              <button class="btn btn-primary btn-lg mt-2" id="placeOrder"><span class="spin"></span><span class="lbl">Place order</span></button></div>
+          </div>
+        </div>
+        <div class="card mt-3"><div class="card-head"><h3>Recent orders</h3></div><div id="pastOrders" class="card-body"></div></div>
+      </div>
+      <div id="doneView" class="hide">
+        <div class="card card-pad" style="text-align:center;padding:2.6rem 1.5rem">
+          <div class="ico ico-success" style="width:80px;height:80px;border-radius:50%;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center"><span data-icon="checkCircle" data-icon-class="icon-lg"></span></div>
+          <h2 style="font-family:var(--display)">Order placed!</h2>
+          <p class="text-muted mt-2">Our kitchen has your order. It will be delivered to <b id="doneWhere"></b> in approximately 25 minutes. Downloading the full receipt is planned for the backend phase.</p>
+          <div class="row mt-4" style="justify-content:center;gap:.6rem"><a class="btn btn-primary" href="food-services.html">Order something else</a><a class="btn btn-outline" href="dashboard.html">Back to dashboard</a></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'user'});
+App.renderDashChrome('uord','Your Orders',[{label:'Dashboard',href:'dashboard.html'},{label:'Food & Services',href:'food-services.html'},{label:'Your Orders',href:'#'}]);
+(function(){
+  var food=App.getFood();
+  var cu=App.getCurrentUser();
+  function cart(){ return App.LS.get('hv_cart',[]); }
+  function byId(id){ return food.filter(function(f){return f.id===id;})[0]; }
+  function renderCart(){
+    var c=cart();
+    var view=document.getElementById('cartView');
+    if(!c.length){ view.innerHTML=App.emptyState('utensils','Your order is empty','Browse the menu and add items to your room order.','<a class="btn btn-primary btn-sm" href="food-services.html">Browse menu</a>'); renderPast(); return; }
+    var tbl=document.getElementById('cartTbl');
+    tbl.innerHTML='<thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead><tbody>'+
+    c.map(function(it){
+      var f=byId(it.id); if(!f)return '';
+      return '<tr class="ord-row"><td><div class="cell-room"><img src="'+f.img+'" alt=""><div><div class="rn">'+App.esc(f.name)+'</div><div class="rt">'+App.esc(f.desc.slice(0,42))+'&hellip;</div></div></div></td>'+
+      '<td><span class="badge b-plain">'+f.cat+'</span></td><td class="amt">'+App.money(f.price)+'</td>'+
+      '<td><div class="qty"><button data-dec="'+f.id+'">'+App.icon('minus','icon-sm')+'</button><span class="q">'+it.qty+'</span><button data-inc="'+f.id+'">'+App.icon('plus','icon-sm')+'</button></div></td>'+
+      '<td class="amt">'+App.money(f.price*it.qty)+'</td>'+
+      '<td><button class="btn btn-ghost btn-sm" data-del="'+f.id+'"><span data-icon="trash"></span></button></td></tr>';
+    }).join('')+'</tbody>';
+    var tot=c.reduce(function(a,b){ return a+byId(b.id).price*b.qty; },0);
+    document.getElementById('estTot').textContent=App.money(tot);
+  }
+  function renderPast(){
+    var orders=App.getOrders().filter(function(o){return o.userId===cu.id;}).slice(0,6);
+    var el=document.getElementById('pastOrders');
+    if(!orders.length){ el.innerHTML='<p class="text-sm" style="color:var(--muted)">No previous orders.</p>'; return; }
+    el.innerHTML=orders.map(function(o){
+      return '<div class="recent-row"><div class="ico ico-accent" style="width:42px;height:42px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center">'+App.icon('utensils','icon')+'</div><div><div class="rr-title">'+App.esc(o.label)+'</div><div class="rr-sub">'+App.esc(o.orderId||o.id)+' &bull; '+o.date+' &bull; '+o.where+'</div></div>'+
+      '<div style="text-align:right"><div class="rr-amt">'+App.money(o.total)+'</div><div class="mt-1">'+orderBadge(o)+'</div></div></div>';
+    }).join('');
+  }
+  function orderBadge(o){
+    var s=(o&&o.status)||'PLACED';
+    var m={PLACED:['b-plain','Placed'],PREPARING:['b-warning','Preparing'],OUT_FOR_DELIVERY:['b-accent','Out for delivery'],DELIVERED:['b-success','Delivered'],CANCELLED:['b-danger','Cancelled']};
+    var cfg=m[s];
+    if(!cfg)cfg=m.PLACED;
+    return '<span class="badge '+cfg[0]+'">'+cfg[1]+'</span>';
+  }
+  var tbl=document.getElementById('cartTbl');
+  tbl.addEventListener('click',function(e){
+    var inc=e.target.closest('[data-inc]'), dec=e.target.closest('[data-dec]'), del=e.target.closest('[data-del]');
+    if(del){ App.LS.set('hv_cart',cart().filter(function(x){return x.id!==del.dataset.del;})); renderCart(); return; }
+    if(inc){ var c=cart(); var it=c.filter(function(x){return x.id===inc.dataset.inc;})[0]; if(it)it.qty++; App.LS.set('hv_cart',c); renderCart(); return; }
+    if(dec){ var c2=cart(); var i2=c2.filter(function(x){return x.id===dec.dataset.dec;})[0]; if(i2&&i2.qty>1)i2.qty--; else if(i2)c2=c2.filter(function(x){return x.id!==dec.dataset.dec;}); App.LS.set('hv_cart',c2); renderCart(); }
+  });
+  document.getElementById('placeOrder').addEventListener('click',function(){
+    var c=cart(); if(!c.length)return;
+    var btn=this; btn.classList.add('loading'); btn.disabled=true;
+    setTimeout(function(){
+      var total=c.reduce(function(a,b){ return a+byId(b.id).price*b.qty; },0);
+      var where=document.getElementById('delivRoom').value;
+      var orders=App.getOrders();
+      orders.unshift({id:'o'+Date.now(),userId:cu.id,label:c.map(function(x){return ''+byId(x.id).name+' x'+x.qty;}).join(', '),total:total,where:where,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),status:'PREPARING'});
+      App.saveOrders(orders);
+      App.LS.set('hv_cart',[]);
+      btn.classList.remove('loading'); btn.disabled=false;
+      document.getElementById('cartView').classList.add('hide');
+      document.getElementById('doneView').classList.remove('hide');
+      document.getElementById('doneWhere').textContent=where;
+      App.toast('Order placed successfully!');
+      renderPast();
+    },900);
+  });
+  renderCart(); renderPast();
+})();

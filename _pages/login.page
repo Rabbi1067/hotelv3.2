@@ -1,0 +1,125 @@
+<!--PAGE-TITLE-->Sign in | Grand Meridian Resort
+<!--PAGE-CSS-->
+.demo-note{display:flex;align-items:center;gap:.45rem;font-size:.75rem;color:var(--muted);margin-top:.5rem}
+.api-badge{display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.18rem .55rem;border-radius:99px}
+.api-badge.on{background:var(--success-soft);color:var(--success)}
+.api-badge.off{background:var(--surface-3);color:var(--muted)}
+<!--PAGE-BODY-->
+<body class="auth-page">
+<button class="icon-btn theme-float" data-theme-toggle data-theme-icon title="Toggle theme"></button>
+<div class="auth-wrap">
+  <div class="auth-side">
+    <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1100&q=70" alt="Grand Meridian Resort at dusk" onerror="this.style.display='none'">
+    <div class="veil"></div>
+    <div class="content">
+      <div class="quote">&ldquo;The sea, the sky, and a room that makes time stand still.&rdquo;</div>
+      <div class="mini">Sign in to manage your bookings, run dashboards or stay connected with Grand Meridian Resort.</div>
+    </div>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-box">
+      <div class="as-head">
+        <a href="index.html" class="logo" style="margin-bottom:1.4rem;display:inline-flex"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M20.2 2.8a6 6 0 0 0-8.5 0L5 9.5V19h9.5l6.7-6.7a6 6 0 0 0-1-9.5z"/><path d="M16 8 2 22M17.5 15H9"/></svg></span><span>Grand Meridian Resort<i class="brand-small" style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.26em;color:var(--accent);font-family:var(--font);text-transform:uppercase;font-style:normal">Resort &amp; Spa</i></span></a>
+        <h1>Welcome back</h1>
+        <p class="as-sub">Log in with your email and password to continue.</p>
+        <div class="api-badge off"><span data-icon="servers" style="width:12px;height:12px"></span> Local demo mode</div>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">Email address</label>
+          <div class="input-affix"><span data-icon="mail"></span><input class="input" type="email" id="email" name="email" placeholder="you@hotel.com" autocomplete="email"></div>
+          <div class="err">Enter a valid email address.</div>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-affix right pass-row"><span data-icon="lock"></span><input class="input" type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password"><button class="eye" type="button" data-eye aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon-sm"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          <div class="err">Password is required (min 6 characters).</div>
+        </div>
+        <div class="row between" style="margin-bottom:1rem">
+          <label class="check"><input type="checkbox" id="remember"> Remember me</label>
+          <a href="forgot-password.html" class="text-sm">Forgot password?</a>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" type="submit" id="submitBtn"><span class="spin"></span><span class="lbl">Sign in</span></button>
+      </form>
+      <div class="demo-box">
+        <h4><span data-icon="key"></span> Test accounts &mdash; one click</h4>
+        <div class="demo-row"><span class="reg">GUEST</span> user@hotel.com <button class="btn btn-soft btn-sm dbtn" data-demo="user@hotel.com">Use</button></div>
+        <div class="demo-row"><span class="reg">STAFF</span> staff@hotel.com <button class="btn btn-soft btn-sm dbtn" data-demo="staff@hotel.com">Use</button></div>
+        <div class="demo-row"><span class="reg">ADMIN</span> admin@hotel.com <button class="btn btn-soft btn-sm dbtn" data-demo="admin@hotel.com">Use</button></div>
+        <div class="demo-row"><span class="reg">SUPER ADMIN</span> superadmin@hotel.com <button class="btn btn-soft btn-sm dbtn" data-demo="superadmin@hotel.com">Use</button></div>
+        <p class="demo-note" style="margin:0">Passwords: User123 &bull; Staff123 &bull; Admin123 &bull; Super123</p>
+      </div>
+      <p class="auth-foot">Don&rsquo;t have an account? <a href="register.html">Create one</a></p>
+      <p class="legal" style="text-align:center;margin-top:1rem">Frontend prototype &mdash; demo data runs locally in your browser.</p>
+    </div>
+  </div>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'guest'});
+(function(){
+  var form=document.getElementById('loginForm');
+  var email=document.getElementById('email');
+  var pass=document.getElementById('password');
+  var remember=document.getElementById('remember');
+  var savedEmail=App.LS.get('hv_remember','');
+  if(savedEmail){ email.value=savedEmail; remember.checked=true; }
+  document.querySelector('[data-eye]').addEventListener('click',function(e){
+    e.preventDefault();
+    var visible=pass.type==='text';
+    pass.type=visible?'password':'text';
+    this.innerHTML=App.icon(visible?'eye':'eyeOff','icon-sm');
+  });
+  var apiMode=null;
+  function setApi(ok){ apiMode=ok; }
+  document.querySelectorAll('[data-demo]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var em=b.dataset.demo;
+      var pwd={ 'user@hotel.com':'User123','staff@hotel.com':'Staff123','admin@hotel.com':'Admin123','superadmin@hotel.com':'Super123' }[em];
+      email.value=em; pass.value=pwd||'';
+      App.clearErrors(form);
+      form.requestSubmit();
+    });
+  });
+  function destFor(role){
+    if(role==='USER')return 'dashboard.html';
+    if(role==='STAFF')return 'dashboard.html';
+    return 'dashboard.html';
+  }
+  function storeUser(u){
+    var full=Object.assign({},u);
+    try{ App.saveUsers(App.getUsers().map(function(x){ return x.email.toLowerCase()===u.email.toLowerCase()?Object.assign(x,u):x; })); if(!App.getUsers().some(function(x){return x.email.toLowerCase()===u.email.toLowerCase();})){ App.saveUsers(App.getUsers().concat([u])); } }catch(e){}
+    App.setCurrentUser(full);
+  }
+  function finish(u){
+    if(remember.checked) App.LS.set('hv_remember',u.email); else App.LS.remove('hv_remember');
+    App.toast('Welcome back, '+u.name+'!');
+    var next=new URLSearchParams(location.search).get('next');
+    if(next&&!/login|403/.test(next)){ setTimeout(function(){ location.replace(next); },650); return; }
+    setTimeout(function(){ location.replace(destFor(u.role)); },650);
+  }
+  function ok(res){
+    if(!res.ok){ App.toast(res.msg,'error'); return false; }
+    storeUser(res.user);
+    finish(res.user);
+    return true;
+  }
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    App.clearErrors(form);
+    var ok2=App.fieldErrors([
+      {id:'email',req:true,pattern:/^[^@\s]+@[^@\s]+\.[^@\s]+$/,msg:'Enter a valid email'},
+      {id:'password',req:true,pattern:/.{3,}/,msg:'Password required'}
+    ]);
+    if(!ok2){ App.toast('Please fix the highlighted fields.','warning'); return; }
+    var btn=document.getElementById('submitBtn');
+    btn.classList.add('loading'); btn.disabled=true;
+    setTimeout(function(){
+      var res=App.login(email.value,pass.value);
+      if(!res.ok){ btn.classList.remove('loading'); btn.disabled=false; App.toast(res.msg,'error'); return; }
+      storeUser(res.user);
+      finish(res.user);
+    },400);
+  });
+  function toastForm(){ App.toast('Please fix the highlighted fields.','warning'); }
+})();

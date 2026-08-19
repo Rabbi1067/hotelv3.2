@@ -1,0 +1,89 @@
+<!--PAGE-TITLE-->Create account | Grand Meridian Resort
+<!--PAGE-CSS-->
+<!--PAGE-BODY-->
+<body class="auth-page">
+<button class="icon-btn theme-float" data-theme-toggle data-theme-icon title="Toggle theme"></button>
+<div class="auth-wrap">
+  <div class="auth-side">
+    <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1100&q=70" alt="Grand Meridian suite" onerror="this.style.display='none'">
+    <div class="veil"></div>
+    <div class="content">
+      <div class="quote">&ldquo;Sign up today &mdash; your next escape is a booking away.&rdquo;</div>
+      <div class="mini">Member perks include member-only rates, priority room upgrades and express check-in.</div>
+    </div>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-box">
+      <div class="as-head">
+        <a href="index.html" class="logo" style="margin-bottom:1.3rem;display:inline-flex"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M20.2 2.8a6 6 0 0 0-8.5 0L5 9.5V19h9.5l6.7-6.7a6 6 0 0 0-1-9.5z"/><path d="M16 8 2 22M17.5 15H9"/></svg></span><span>Grand Meridian Resort<i class="brand-small" style="display:block;font-size:.6rem;font-weight:700;letter-spacing:.26em;color:var(--accent);font-family:var(--font);text-transform:uppercase;font-style:normal">Resort &amp; Spa</i></span></a>
+        <h1>Create your account</h1>
+        <p class="as-sub">Join Grand Meridian and start planning your stay.</p>
+      </div>
+      <form id="regForm" novalidate>
+        <div class="field">
+          <label for="rName">Full name</label>
+          <div class="input-affix"><span data-icon="user"></span><input class="input" type="text" id="rName" placeholder="e.g. Fazley Rabbi" autocomplete="name"></div>
+          <div class="err">Please enter your full name.</div>
+        </div>
+        <div class="field">
+          <label for="rEmail">Email address</label>
+          <div class="input-affix"><span data-icon="mail"></span><input class="input" type="email" id="rEmail" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="err">Enter a valid email address.</div>
+        </div>
+        <div class="field">
+          <label for="rPhone">Phone number <span class="text-muted" style="font-weight:400">(optional)</span></label>
+          <div class="input-affix"><span data-icon="phone"></span><input class="input" type="tel" id="rPhone" placeholder="+880 1XXX XXXXXX" autocomplete="tel"></div>
+          <div class="err">Enter a valid phone number with country code.</div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div class="field">
+            <label for="rPass">Password</label>
+            <div class="input-affix right pass-row"><span data-icon="lock"></span><input class="input" type="password" id="rPass" placeholder="Min 6 characters" autocomplete="new-password"></div>
+            <div class="err">Use at least 6 characters.</div>
+          </div>
+          <div class="field">
+            <label for="rPass2">Confirm password</label>
+            <div class="input-affix right pass-row"><span data-icon="lock"></span><input class="input" type="password" id="rPass2" placeholder="Repeat password" autocomplete="new-password"></div>
+            <div class="err">Passwords do not match.</div>
+          </div>
+        </div>
+        <label class="check mb-3">
+          <input type="checkbox" id="rTerms">
+          <span>I agree to the <a href="#" onclick="App.toast('Terms will be available with the backend build.','info');return false">Terms of Service</a> and <a href="#" onclick="App.toast('Privacy policy coming soon.','info');return false">Privacy Policy</a>.</span>
+        </label>
+        <button class="btn btn-primary btn-lg btn-block" type="submit" id="regBtn"><span class="spin"></span><span class="lbl">Create account</span></button>
+      </form>
+      <p class="auth-foot">Already have an account? <a href="login.html">Sign in</a></p>
+      <p class="legal" style="text-align:center;margin-top:1rem">Prototype only &mdash; accounts are stored locally in your browser.</p>
+    </div>
+  </div>
+</div>
+</body>
+<!--PAGE-JS-->
+App.boot({guard:'guest'});
+(function(){
+  var form=document.getElementById('regForm');
+  var pw=document.getElementById('rPass');
+  var hash=(pw.value||'x').length;
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    App.clearErrors(form);
+    var field=document.getElementById('rPass'), field2=document.getElementById('rPass2');
+    var ok=App.fieldErrors([
+      {id:'rName',req:true},
+      {id:'rEmail',req:true,pattern:/^[^@\s]+@[^@\s]+\.[^@\s]+$/},
+      {id:'rPhone',req:false,pattern:/^[+\d][\d\s-]{6,16}$/},
+      {id:'rPass',req:true,pattern:/^.{6,}$/}
+    ]);
+    if(!ok){ App.toast('Please fix the highlighted fields.','warning'); return; }
+    if(field2.value!==pw.value){ field2.closest('.field').classList.add('show-err'); App.toast('Passwords do not match.','warning'); return; }
+    if(!document.getElementById('rTerms').checked){ App.toast('Please accept the terms to continue.','warning'); return; }
+    var btn=document.getElementById('regBtn'); btn.classList.add('loading'); btn.disabled=true;
+    setTimeout(function(){
+      var res=App.register({name:document.getElementById('rName').value,email:document.getElementById('rEmail').value,phone:document.getElementById('rPhone').value,password:pw.value});
+      if(!res.ok){ btn.classList.remove('loading'); btn.disabled=false; App.toast(res.msg,'error'); return; }
+      App.toast('Account created. Welcome to Grand Meridian, '+res.user.name+'!');
+      setTimeout(function(){ location.replace('dashboard.html'); },800);
+    },800);
+  });
+})();
